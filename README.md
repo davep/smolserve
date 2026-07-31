@@ -36,6 +36,35 @@ If target directories or plan files do not exist, `smolserve` automatically crea
 
 ---
 
+### Exec / Command Wrapper Mode
+
+You can run `smolserve exec -- <command>` to start `smolserve` in the background for the duration of a command (such as `mkdocs build` or `mkdocs serve`). `smolserve` starts the protocol servers, executes your command, handles signal forwarding (`Ctrl+C`), and automatically shuts down all servers when the command exits.
+
+```bash
+# Build docs with smolserve running in background
+uv run smolserve exec -- mkdocs build
+
+# Serve docs with livereload
+uv run smolserve exec -- mkdocs serve --livereload
+
+# Pass custom options to smolserve while using exec
+uv run smolserve -c smolserve.toml exec -- mkdocs build
+```
+
+Makefile example:
+
+```makefile
+.PHONY: docs
+docs:
+	uv run smolserve exec -- $(mkdocs) build
+
+.PHONY: rtfm
+rtfm:
+	uv run smolserve exec -- $(mkdocs) serve --livereload
+```
+
+---
+
 ### Command Line Options
 
 ```bash

@@ -64,3 +64,19 @@ plan_file = "/tmp/my_plan.txt"
         assert config.finger.plan_file == Path("/tmp/my_plan.txt")
     finally:
         tf_path.unlink()
+
+
+def test_exec_parsing():
+    # Test 'exec -- command args'
+    config1 = parse_args(["--gemini-port", "1966", "exec", "--", "echo", "hello"])
+    assert config1.gemini.port == 1966
+    assert config1.exec_command == ["echo", "hello"]
+
+    # Test 'exec command args' without '--'
+    config2 = parse_args(["exec", "python", "-c", "print('hi')"])
+    assert config2.exec_command == ["python", "-c", "print('hi')"]
+
+    # Test '--exec command args'
+    config3 = parse_args(["--exec", "ls", "-la"])
+    assert config3.exec_command == ["ls", "-la"]
+

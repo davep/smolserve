@@ -84,8 +84,12 @@ class SmolServe:
         self.config = config
         self.servers: list[GeminiServer | GopherServer | FingerServer] = []
 
-    async def start(self) -> None:
-        """Start all enabled protocol servers and run until stopped."""
+    async def start(self) -> int:
+        """Start all enabled protocol servers and run until stopped or child process exits.
+
+        Returns:
+            Exit code (0 for success, child process return code if exec_command was provided).
+        """
         create_sample_content(self.config)
 
         if self.config.gemini.enabled:
@@ -116,35 +120,75 @@ class SmolServe:
 
         if not self.servers:
             logger.error("No protocol servers enabled! Exiting.")
-            return
+            return 1
 
         # Start all servers
         for server in self.servers:
             await server.start()
 
-        logger.info("smolserve is running. Press Ctrl+C to stop.")
+        if self.config.exec_command:
+            cmd_str = " ".join(self.config.exec_command)
+            logger.info("Executing child command: %s", cmd_str)
 
-        # Setup graceful shutdown handling
-        loop = asyncio.get_running_loop()
-        stop_event = asyncio.Event()
+            proc = await asyncio.create_subprocess_exec(
+                self.config.exec_command[0],
+                *self.config.exec_command[1:],
+            )
 
-        def _signal_handler() -> None:
-            logger.info("Shutdown signal received.")
-            stop_event.set()
+            loop = asyncio.get_running_loop()
 
-        for sig in (signal.SIGINT, signal.SIGTERM):
+            def _forward_signal(sig: int) -> None:
+                logger.info("Signal received, forwarding to child process (PID %d)...", proc.pid)
+                try:
+                    proc.send_signal(sig)
+                except ProcessLookupError:
+                    pass
+
+            for sig in (signal.SIGINT, signal.SIGTERM):
+                try:
+                    loop.add_signal_handler(sig, _forward_signal, sig)
+                except NotImplementedError:
+                    pass
+
             try:
-                loop.add_signal_handler(sig, _signal_handler)
-            except NotImplementedError:
-                # Windows support fallback
-                pass
+                returncode = await proc.wait()
+            except asyncio.CancelledError:
+                try:
+                    proc.terminate()
+                    await proc.wait()
+                except Exception:
+                    pass
+                returncode = 130
+            finally:
+                await self.stop()
 
-        try:
-            await stop_event.wait()
-        except asyncio.CancelledError:
-            pass
-        finally:
-            await self.stop()
+            return returncode
+        else:
+            logger.info("smolserve is running. Press Ctrl+C to stop.")
+
+            # Setup graceful shutdown handling
+            loop = asyncio.get_running_loop()
+            stop_event = asyncio.Event()
+
+            def _signal_handler() -> None:
+                logger.info("Shutdown signal received.")
+                stop_event.set()
+
+            for sig in (signal.SIGINT, signal.SIGTERM):
+                try:
+                    loop.add_signal_handler(sig, _signal_handler)
+                except NotImplementedError:
+                    # Windows support fallback
+                    pass
+
+            try:
+                await stop_event.wait()
+            except asyncio.CancelledError:
+                pass
+            finally:
+                await self.stop()
+
+            return 0
 
     async def stop(self) -> None:
         """Stop all running servers."""

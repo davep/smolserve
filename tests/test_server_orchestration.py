@@ -63,3 +63,23 @@ async def test_smolserve_lifecycle():
         # Stop servers
         await smol.stop()
         task.cancel()
+
+
+@pytest.mark.asyncio
+async def test_smolserve_exec_command():
+    with tempfile.TemporaryDirectory() as tmpdir:
+        base = Path(tmpdir)
+        config = Config()
+        config.gemini.port = 0
+        config.gopher.port = 0
+        config.finger.port = 0
+        config.gemini.root = base / "gemini"
+        config.gopher.root = base / "gopher"
+        config.finger.plan_file = base / "finger" / "plan.txt"
+        config.exec_command = ["python", "-c", "import sys; sys.exit(0)"]
+
+        smol = SmolServe(config)
+        code = await smol.start()
+        assert code == 0
+        assert len(smol.servers) == 0  # Cleaned up after child exited
+

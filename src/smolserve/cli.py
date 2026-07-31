@@ -17,16 +17,24 @@ def main(args: list[str] | None = None) -> int:
     Returns:
         Exit status code.
     """
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-        datefmt="%H:%M:%S",
-    )
-
     try:
         config = parse_args(args)
-        asyncio.run(SmolServe(config).start())
-        return 0
+
+        if config.verbose:
+            log_level = logging.DEBUG
+        elif config.quiet or (config.exec_command is not None):
+            log_level = logging.WARNING
+        else:
+            log_level = logging.INFO
+
+        logging.basicConfig(
+            level=log_level,
+            format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+            datefmt="%H:%M:%S",
+        )
+
+        code = asyncio.run(SmolServe(config).start())
+        return code
     except KeyboardInterrupt:
         return 0
     except Exception as exc:

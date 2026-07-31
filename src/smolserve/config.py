@@ -48,6 +48,9 @@ class Config:
     gemini: GeminiConfig = field(default_factory=GeminiConfig)
     gopher: GopherConfig = field(default_factory=GopherConfig)
     finger: FingerConfig = field(default_factory=FingerConfig)
+    exec_command: list[str] | None = None
+    verbose: bool = False
+    quiet: bool = False
 
     @classmethod
     def from_toml(cls, path: Path) -> "Config":
@@ -68,6 +71,8 @@ class Config:
             gen = data["general"]
             if "host" in gen:
                 config.host = str(gen["host"])
+            config.verbose = gen.get("verbose", config.verbose)
+            config.quiet = gen.get("quiet", config.quiet)
 
         if "gemini" in data:
             gem = data["gemini"]
@@ -130,12 +135,52 @@ def parse_args(args: list[str] | None = None) -> Config:
     Returns:
         Combined Config instance.
     """
+    if args is None:
+        args = sys.argv[1:]
+
+    exec_cmd: list[str] | None = None
+    server_args = list(args)
+
+    # Check for 'exec' subcommand or '--exec' option
+    if "exec" in server_args:
+        exec_idx = server_args.index("exec")
+        if "--" in server_args[exec_idx + 1 :]:
+            dash_idx = server_args.index("--", exec_idx + 1)
+            exec_cmd = server_args[dash_idx + 1 :]
+            server_args = server_args[:exec_idx] + server_args[exec_idx + 1 : dash_idx]
+        else:
+            exec_cmd = server_args[exec_idx + 1 :]
+            server_args = server_args[:exec_idx]
+    elif "--exec" in server_args:
+        exec_idx = server_args.index("--exec")
+        if "--" in server_args[exec_idx + 1 :]:
+            dash_idx = server_args.index("--", exec_idx + 1)
+            exec_cmd = server_args[dash_idx + 1 :]
+            server_args = server_args[:exec_idx] + server_args[exec_idx + 1 : dash_idx]
+        else:
+            exec_cmd = server_args[exec_idx + 1 :]
+            server_args = server_args[:exec_idx]
+
     parser = argparse.ArgumentParser(
         description="smolserve - A lightweight Gemini, Gopher, and Finger server."
     )
 
+    exec_group = parser.add_argument_group("execution mode")
+    exec_group.add_argument(
+        "exec_help",
+        nargs="*",
+        metavar="exec [-- COMMAND [ARGS...]]",
+        help="Run smolserve in the background for the duration of COMMAND and stop when finished.",
+    )
+
     parser.add_argument(
         "-c", "--config", type=Path, help="Path to TOML configuration file."
+    )
+    parser.add_argument(
+        "-v", "--verbose", action="store_true", help="Enable verbose logging output."
+    )
+    parser.add_argument(
+        "-q", "--quiet", action="store_true", help="Silence informational output (errors only)."
     )
     parser.add_argument(
         "--generate-config",
@@ -167,7 +212,7 @@ def parse_args(args: list[str] | None = None) -> Config:
         "--no-finger", action="store_true", help="Disable Finger server."
     )
 
-    parsed = parser.parse_args(args)
+    parsed = parser.parse_args(server_args)
 
     if parsed.generate_config:
         sys.stdout.write(SAMPLE_TOML_CONFIG)
@@ -179,7 +224,13 @@ def parse_args(args: list[str] | None = None) -> Config:
     else:
         config = Config()
 
+    config.exec_command = exec_cmd if exec_cmd else None
+
     # CLI overrides
+    if parsed.verbose:
+        config.verbose = True
+    if parsed.quiet:
+        config.quiet = True
     if parsed.host is not None:
         config.host = parsed.host
 
@@ -212,3 +263,4 @@ def parse_args(args: list[str] | None = None) -> Config:
         config.finger.plan_file = parsed.finger_plan
 
     return config
+
