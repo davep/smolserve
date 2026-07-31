@@ -102,10 +102,7 @@ async def test_gopher_server_gophermap_dot_termination() -> None:
     with tempfile.TemporaryDirectory() as tmpdir:
         root = Path(tmpdir)
         gophermap_content = (
-            "Welcome to Gopher\n"
-            "0File 1\t/file1.txt\n"
-            ".\n"
-            "This line should be ignored\n"
+            "Welcome to Gopher\n0File 1\t/file1.txt\n.\nThis line should be ignored\n"
         )
         (root / "gophermap").write_text(gophermap_content, encoding="utf-8")
 
