@@ -1,0 +1,25 @@
+[project]
+name = "smolserve"
+version = "0.0.1"
+description = "Lightweight local multi-protocol server for Gemini, Gopher, and Finger protocols"
+readme = "README.md"
+authors = [
+    { name = "Dave Pearson", email = "davep@davep.org" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "cryptography>=49.0.0",
+]
+
+[project.scripts]
+smolserve = "smolserve:main"
+
+[build-system]
+requires = ["uv_build>=0.12.0,<0.13.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
+]
