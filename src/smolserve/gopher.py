@@ -97,6 +97,8 @@ class GopherServer:
                     encoding="utf-8", errors="replace"
                 )
                 for raw_line in map_content.splitlines():
+                    if raw_line == ".":
+                        break
                     if not raw_line:
                         lines.append(f"i\t\t{self.host}\t{self.port}")
                         continue
