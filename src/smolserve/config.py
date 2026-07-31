@@ -169,7 +169,7 @@ def parse_args(args: list[str] | None = None) -> Config:
     exec_group.add_argument(
         "exec_help",
         nargs="*",
-        metavar="exec [-- COMMAND [ARGS...]]",
+        metavar="[exec | --exec] [-- COMMAND [ARGS...]]",
         help="Run smolserve in the background for the duration of COMMAND and stop when finished.",
     )
 
