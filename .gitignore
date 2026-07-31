@@ -17,3 +17,6 @@ public_gopher/
 # Testing
 .coverage
 .reports/
+
+# Docs
+site/
