@@ -4,22 +4,43 @@ Listens for Gopher requests (RFC 1436) and serves directory menus (gophermaps)
 and files from a specified root directory.
 """
 
-from pathlib import Path
 import asyncio
 import logging
-import mimetypes
 import urllib.parse
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
 TEXT_EXTENSIONS = {
-    ".txt", ".gmi", ".gemini", ".md", ".py", ".c", ".h", ".json",
-    ".toml", ".yaml", ".yml", ".html", ".htm", ".css", ".js", ".sh",
-    ".rst", ".org", ".log", ".csv",
+    ".txt",
+    ".gmi",
+    ".gemini",
+    ".md",
+    ".py",
+    ".c",
+    ".h",
+    ".json",
+    ".toml",
+    ".yaml",
+    ".yml",
+    ".html",
+    ".htm",
+    ".css",
+    ".js",
+    ".sh",
+    ".rst",
+    ".org",
+    ".log",
+    ".csv",
 }
 
 IMAGE_EXTENSIONS = {
-    ".gif", ".jpg", ".jpeg", ".png", ".bmp", ".webp",
+    ".gif",
+    ".jpg",
+    ".jpeg",
+    ".png",
+    ".bmp",
+    ".webp",
 }
 
 
@@ -72,7 +93,9 @@ class GopherServer:
         if gophermap_file.is_file():
             # Parse user custom gophermap file
             try:
-                map_content = gophermap_file.read_text(encoding="utf-8", errors="replace")
+                map_content = gophermap_file.read_text(
+                    encoding="utf-8", errors="replace"
+                )
                 for raw_line in map_content.splitlines():
                     if not raw_line:
                         lines.append(f"i\t\t{self.host}\t{self.port}")
@@ -83,7 +106,9 @@ class GopherServer:
                         item_type_label = parts[0]
                         selector = parts[1] if len(parts) > 1 else ""
                         host = parts[2] if len(parts) > 2 and parts[2] else self.host
-                        port = parts[3] if len(parts) > 3 and parts[3] else str(self.port)
+                        port = (
+                            parts[3] if len(parts) > 3 and parts[3] else str(self.port)
+                        )
                         lines.append(f"{item_type_label}\t{selector}\t{host}\t{port}")
                     else:
                         # Plain text in gophermap is info text ('i')
@@ -91,7 +116,9 @@ class GopherServer:
                         first_char = raw_line[0]
                         if first_char in "0123456789+gIih":
                             label = raw_line[1:]
-                            lines.append(f"{first_char}{label}\t\t{self.host}\t{self.port}")
+                            lines.append(
+                                f"{first_char}{label}\t\t{self.host}\t{self.port}"
+                            )
                         else:
                             lines.append(f"i{raw_line}\t\t{self.host}\t{self.port}")
             except Exception as exc:
@@ -99,7 +126,9 @@ class GopherServer:
                 lines.append(f"3Error reading gophermap\t\t{self.host}\t{self.port}")
         else:
             # Auto-generate menu listing
-            lines.append(f"iDirectory listing for /{relative_prefix}\t\t{self.host}\t{self.port}")
+            lines.append(
+                f"iDirectory listing for /{relative_prefix}\t\t{self.host}\t{self.port}"
+            )
             lines.append(f"i\t\t{self.host}\t{self.port}")
 
             try:
@@ -111,7 +140,9 @@ class GopherServer:
                     item_type = self._determine_item_type(entry)
                     rel_path = f"{relative_prefix}/{entry.name}".lstrip("/")
                     selector = f"/{rel_path}"
-                    lines.append(f"{item_type}{entry.name}\t{selector}\t{self.host}\t{self.port}")
+                    lines.append(
+                        f"{item_type}{entry.name}\t{selector}\t{self.host}\t{self.port}"
+                    )
             except Exception as exc:
                 logger.error("Error listing directory %s: %s", dir_path, exc)
                 lines.append(f"3Error listing directory\t\t{self.host}\t{self.port}")
@@ -135,7 +166,11 @@ class GopherServer:
             selector_parts = raw_selector.split("\t")
             selector = urllib.parse.unquote(selector_parts[0]).lstrip("/")
 
-            logger.info("Gopher request from %s for selector: '%s'", writer.get_extra_info("peername"), selector)
+            logger.info(
+                "Gopher request from %s for selector: '%s'",
+                writer.get_extra_info("peername"),
+                selector,
+            )
 
             # Security check: path traversal prevention
             target_path = (self.root / selector).resolve()
@@ -153,7 +188,9 @@ class GopherServer:
                 return
 
             if not target_path.exists():
-                error_menu = f"3Item not found: /{selector}\t\t{self.host}\t{self.port}\r\n.\r\n"
+                error_menu = (
+                    f"3Item not found: /{selector}\t\t{self.host}\t{self.port}\r\n.\r\n"
+                )
                 writer.write(error_menu.encode("utf-8"))
                 await writer.drain()
                 return
@@ -166,7 +203,9 @@ class GopherServer:
                 item_type = self._determine_item_type(target_path)
                 if item_type == "0":
                     # Text file: write lines with dot-stuffing and trailing .\r\n
-                    text_content = target_path.read_text(encoding="utf-8", errors="replace")
+                    text_content = target_path.read_text(
+                        encoding="utf-8", errors="replace"
+                    )
                     stuffed_lines = []
                     for t_line in text_content.splitlines():
                         if t_line.startswith("."):
@@ -180,7 +219,7 @@ class GopherServer:
                     writer.write(target_path.read_bytes())
                     await writer.drain()
 
-        except asyncio.TimeoutError:
+        except TimeoutError:
             logger.warning("Gopher request timed out.")
         except Exception as exc:
             logger.error("Error handling Gopher request: %s", exc)
@@ -193,7 +232,12 @@ class GopherServer:
         self.server = await asyncio.start_server(
             self.handle_client, self.host, self.port
         )
-        logger.info("Gopher server listening on %s:%d (root: %s)", self.host, self.port, self.root)
+        logger.info(
+            "Gopher server listening on %s:%d (root: %s)",
+            self.host,
+            self.port,
+            self.root,
+        )
 
     async def stop(self) -> None:
         """Stop the Gopher server."""

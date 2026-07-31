@@ -1,15 +1,16 @@
 """Integration tests for SmolServe orchestrator and CLI features."""
 
-from pathlib import Path
 import asyncio
 import tempfile
+from pathlib import Path
+
 import pytest
 
 from smolserve.config import Config, parse_args
 from smolserve.server import SmolServe, create_sample_content
 
 
-def test_create_sample_content():
+def test_create_sample_content() -> None:
     with tempfile.TemporaryDirectory() as tmpdir:
         base = Path(tmpdir)
         config = Config()
@@ -25,7 +26,7 @@ def test_create_sample_content():
         assert (base / "finger" / "plan.txt").is_file()
 
 
-def test_generate_config_option(capsys):
+def test_generate_config_option(capsys: pytest.CaptureFixture[str]) -> None:
     with pytest.raises(SystemExit) as exc_info:
         parse_args(["--generate-config"])
     assert exc_info.value.code == 0
@@ -37,7 +38,7 @@ def test_generate_config_option(capsys):
 
 
 @pytest.mark.asyncio
-async def test_smolserve_lifecycle():
+async def test_smolserve_lifecycle() -> None:
     with tempfile.TemporaryDirectory() as tmpdir:
         base = Path(tmpdir)
         config = Config()
@@ -66,7 +67,7 @@ async def test_smolserve_lifecycle():
 
 
 @pytest.mark.asyncio
-async def test_smolserve_exec_command():
+async def test_smolserve_exec_command() -> None:
     with tempfile.TemporaryDirectory() as tmpdir:
         base = Path(tmpdir)
         config = Config()
@@ -82,4 +83,3 @@ async def test_smolserve_exec_command():
         code = await smol.start()
         assert code == 0
         assert len(smol.servers) == 0  # Cleaned up after child exited
-

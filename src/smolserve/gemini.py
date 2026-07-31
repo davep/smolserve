@@ -4,12 +4,12 @@ Listens for Gemini requests (Project Gemini spec) over TLS and serves Gemtext
 documents and static files from a specified root directory.
 """
 
-from pathlib import Path
 import asyncio
 import logging
 import mimetypes
 import ssl
 import urllib.parse
+from pathlib import Path
 
 from .certs import ensure_certificate
 
@@ -58,7 +58,9 @@ class GeminiServer:
         ssl_ctx.load_cert_chain(certfile=str(cert_path), keyfile=str(key_path))
         return ssl_ctx
 
-    def _generate_directory_listing(self, dir_path: Path, relative_prefix: str) -> bytes:
+    def _generate_directory_listing(
+        self, dir_path: Path, relative_prefix: str
+    ) -> bytes:
         """Generate a Gemtext directory listing.
 
         Args:
@@ -68,7 +70,7 @@ class GeminiServer:
         Returns:
             Bytes containing Gemtext directory listing content.
         """
-        prefix = f"/{relative_prefix.strip('/')}" if relative_prefix.strip('/') else ""
+        prefix = f"/{relative_prefix.strip('/')}" if relative_prefix.strip("/") else ""
         lines = [f"# Directory listing for {prefix or '/'}", ""]
 
         if prefix:
@@ -127,7 +129,11 @@ class GeminiServer:
                 return
 
             raw_url = line.decode("utf-8", errors="replace").rstrip("\r\n")
-            logger.info("Gemini request from %s: '%s'", writer.get_extra_info("peername"), raw_url)
+            logger.info(
+                "Gemini request from %s: '%s'",
+                writer.get_extra_info("peername"),
+                raw_url,
+            )
 
             # Parse URL
             parsed = urllib.parse.urlparse(raw_url)
@@ -169,19 +175,19 @@ class GeminiServer:
                 else:
                     # Serve Gemtext directory listing
                     body = self._generate_directory_listing(target_path, rel_path_str)
-                    header = f"20 text/gemini; charset=utf-8\r\n".encode("utf-8")
+                    header = b"20 text/gemini; charset=utf-8\r\n"
                     writer.write(header + body)
                     await writer.drain()
                     return
 
             # Serve file
             mime = self._determine_mime_type(target_path)
-            header = f"20 {mime}\r\n".encode("utf-8")
+            header = f"20 {mime}\r\n".encode()
             body = target_path.read_bytes()
             writer.write(header + body)
             await writer.drain()
 
-        except asyncio.TimeoutError:
+        except TimeoutError:
             logger.warning("Gemini request timed out.")
         except Exception as exc:
             logger.error("Error handling Gemini request: %s", exc)
@@ -200,7 +206,12 @@ class GeminiServer:
         self.server = await asyncio.start_server(
             self.handle_client, self.host, self.port, ssl=ssl_ctx
         )
-        logger.info("Gemini server listening on gemini://%s:%d (root: %s)", self.host, self.port, self.root)
+        logger.info(
+            "Gemini server listening on gemini://%s:%d (root: %s)",
+            self.host,
+            self.port,
+            self.root,
+        )
 
     async def stop(self) -> None:
         """Stop the Gemini server."""

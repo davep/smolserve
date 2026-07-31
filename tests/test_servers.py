@@ -1,24 +1,26 @@
 """Asynchronous unit and integration tests for Finger, Gopher, and Gemini servers."""
 
-from pathlib import Path
 import asyncio
 import ssl
 import tempfile
+from pathlib import Path
+
 import pytest
 
 from smolserve.finger import FingerServer
-from smolserve.gopher import GopherServer
 from smolserve.gemini import GeminiServer
+from smolserve.gopher import GopherServer
 
 
 @pytest.mark.asyncio
-async def test_finger_server():
+async def test_finger_server() -> None:
     with tempfile.TemporaryDirectory() as tmpdir:
         plan_file = Path(tmpdir) / "plan.txt"
         plan_file.write_text("Hello Finger World!\r\nLine 2\n", encoding="utf-8")
 
         server = FingerServer(host="127.0.0.1", port=0, plan_file=plan_file)
         await server.start()
+        assert server.server is not None
         actual_port = server.server.sockets[0].getsockname()[1]
 
         try:
@@ -37,13 +39,14 @@ async def test_finger_server():
 
 
 @pytest.mark.asyncio
-async def test_gopher_server_directory_and_file():
+async def test_gopher_server_directory_and_file() -> None:
     with tempfile.TemporaryDirectory() as tmpdir:
         root = Path(tmpdir)
         (root / "test.txt").write_text("Gopher text content", encoding="utf-8")
 
         server = GopherServer(host="127.0.0.1", port=0, root=root)
         await server.start()
+        assert server.server is not None
         actual_port = server.server.sockets[0].getsockname()[1]
 
         try:
@@ -73,11 +76,12 @@ async def test_gopher_server_directory_and_file():
 
 
 @pytest.mark.asyncio
-async def test_gopher_server_security_path_traversal():
+async def test_gopher_server_security_path_traversal() -> None:
     with tempfile.TemporaryDirectory() as tmpdir:
         root = Path(tmpdir)
         server = GopherServer(host="127.0.0.1", port=0, root=root)
         await server.start()
+        assert server.server is not None
         actual_port = server.server.sockets[0].getsockname()[1]
 
         try:
@@ -94,13 +98,16 @@ async def test_gopher_server_security_path_traversal():
 
 
 @pytest.mark.asyncio
-async def test_gemini_server_gmi_and_not_found():
+async def test_gemini_server_gmi_and_not_found() -> None:
     with tempfile.TemporaryDirectory() as tmpdir:
         root = Path(tmpdir)
-        (root / "index.gmi").write_text("# Gemini Title\n\nGemini text", encoding="utf-8")
+        (root / "index.gmi").write_text(
+            "# Gemini Title\n\nGemini text", encoding="utf-8"
+        )
 
         server = GeminiServer(host="127.0.0.1", port=0, root=root)
         await server.start()
+        assert server.server is not None
         actual_port = server.server.sockets[0].getsockname()[1]
 
         ssl_ctx = ssl.create_default_context()
@@ -109,8 +116,10 @@ async def test_gemini_server_gmi_and_not_found():
 
         try:
             # Request index.gmi via root path
-            reader, writer = await asyncio.open_connection("127.0.0.1", actual_port, ssl=ssl_ctx)
-            writer.write(f"gemini://127.0.0.1:{actual_port}/\r\n".encode("utf-8"))
+            reader, writer = await asyncio.open_connection(
+                "127.0.0.1", actual_port, ssl=ssl_ctx
+            )
+            writer.write(f"gemini://127.0.0.1:{actual_port}/\r\n".encode())
             await writer.drain()
             response = (await reader.read()).decode("utf-8")
             writer.close()
@@ -120,8 +129,10 @@ async def test_gemini_server_gmi_and_not_found():
             assert "# Gemini Title" in response
 
             # Request non-existent file
-            reader, writer = await asyncio.open_connection("127.0.0.1", actual_port, ssl=ssl_ctx)
-            writer.write(f"gemini://127.0.0.1:{actual_port}/missing.gmi\r\n".encode("utf-8"))
+            reader, writer = await asyncio.open_connection(
+                "127.0.0.1", actual_port, ssl=ssl_ctx
+            )
+            writer.write(f"gemini://127.0.0.1:{actual_port}/missing.gmi\r\n".encode())
             await writer.drain()
             not_found_resp = (await reader.read()).decode("utf-8")
             writer.close()

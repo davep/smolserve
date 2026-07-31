@@ -4,11 +4,11 @@ Parses command-line arguments and optional TOML configuration files, merging
 settings with appropriate defaults.
 """
 
-from dataclasses import dataclass, field
-from pathlib import Path
 import argparse
 import sys
 import tomllib
+from dataclasses import dataclass, field
+from pathlib import Path
 
 
 @dataclass
@@ -180,7 +180,10 @@ def parse_args(args: list[str] | None = None) -> Config:
         "-v", "--verbose", action="store_true", help="Enable verbose logging output."
     )
     parser.add_argument(
-        "-q", "--quiet", action="store_true", help="Silence informational output (errors only)."
+        "-q",
+        "--quiet",
+        action="store_true",
+        help="Silence informational output (errors only).",
     )
     parser.add_argument(
         "--generate-config",
@@ -219,10 +222,7 @@ def parse_args(args: list[str] | None = None) -> Config:
         sys.exit(0)
 
     # Start with default config or load from TOML if specified
-    if parsed.config:
-        config = Config.from_toml(parsed.config)
-    else:
-        config = Config()
+    config = Config.from_toml(parsed.config) if parsed.config else Config()
 
     config.exec_command = exec_cmd if exec_cmd else None
 
@@ -263,4 +263,3 @@ def parse_args(args: list[str] | None = None) -> Config:
         config.finger.plan_file = parsed.finger_plan
 
     return config
-

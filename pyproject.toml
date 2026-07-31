@@ -7,8 +7,29 @@ authors = [
     { name = "Dave Pearson", email = "davep@davep.org" }
 ]
 requires-python = ">=3.13"
+license = "GPL-3.0-or-later"
+keywords = [
+    "gemini",
+    "gopher",
+    "finger",
+    "server",
+    "testing",
+]
 dependencies = [
     "cryptography>=49.0.0",
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3.15",
+    "Typing :: Typed",
 ]
 
 [project.scripts]
@@ -18,8 +39,59 @@ smolserve = "smolserve:main"
 requires = ["uv_build>=0.12.0,<0.13.0"]
 build-backend = "uv_build"
 
+[[tool.uv.index]]
+name = "testpypi"
+url = "https://test.pypi.org/simple/"
+publish-url = "https://test.pypi.org/legacy/"
+explicit = true
+
+[tool.pyright]
+venvPath="."
+venv=".venv"
+exclude=[".venv"]
+
 [dependency-groups]
 dev = [
+    "codespell>=2.4.3",
+    "coverage>=7.15.2",
+    "mypy>=2.3.0",
     "pytest>=9.1.1",
     "pytest-asyncio>=1.4.0",
+    "pytest-cov>=7.1.0",
+    "ruff>=0.16.1",
+]
+
+[tool.ruff.lint]
+select = [
+    # pycodestyle
+    "E",
+    # Pyflakes
+    "F",
+    # pyupgrade
+    "UP",
+    # flake8-bugbear
+    "B",
+    # flake8-simplify
+    "SIM",
+    # isort
+    "I",
+]
+ignore = [
+    # I think try...except...pass reads far better.
+    "SIM105",
+]
+
+[tool.ruff.lint.pycodestyle]
+max-line-length = 120
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+addopts = [
+    "--strict-markers",
+    "--strict-config",
+    "--cov",
+    "--cov-report=term-missing",
+    "--cov-report=html:.reports/html",
+    "--cov-report=xml:.reports/coverage.xml",
 ]

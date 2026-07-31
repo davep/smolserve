@@ -13,3 +13,7 @@ wheels/
 plan.txt
 public_gemini/
 public_gopher/
+
+# Testing
+.coverage
+.reports/

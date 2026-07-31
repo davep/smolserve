@@ -3,9 +3,9 @@
 Listens for Finger queries (RFC 1288) and responds with the contents of a plan file.
 """
 
-from pathlib import Path
 import asyncio
 import logging
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +39,11 @@ class FingerServer:
             # Read query line (up to 1024 bytes)
             line = await asyncio.wait_for(reader.readline(), timeout=10.0)
             query = line.decode("utf-8", errors="replace").strip()
-            logger.info("Finger request from %s for query: '%s'", writer.get_extra_info("peername"), query)
+            logger.info(
+                "Finger request from %s for query: '%s'",
+                writer.get_extra_info("peername"),
+                query,
+            )
 
             # Read plan file
             plan_path = self.plan_file.expanduser().resolve()
@@ -56,7 +60,7 @@ class FingerServer:
             formatted = "\r\n".join(lines) + "\r\n"
             writer.write(formatted.encode("utf-8"))
             await writer.drain()
-        except asyncio.TimeoutError:
+        except TimeoutError:
             logger.warning("Finger request timed out.")
         except Exception as exc:
             logger.error("Error handling Finger request: %s", exc)
@@ -69,7 +73,12 @@ class FingerServer:
         self.server = await asyncio.start_server(
             self.handle_client, self.host, self.port
         )
-        logger.info("Finger server listening on %s:%d (plan file: %s)", self.host, self.port, self.plan_file)
+        logger.info(
+            "Finger server listening on %s:%d (plan file: %s)",
+            self.host,
+            self.port,
+            self.plan_file,
+        )
 
     async def stop(self) -> None:
         """Stop the Finger server."""

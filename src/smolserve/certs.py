@@ -5,9 +5,9 @@ persistent self-signed X.509 certificates and private RSA keys when user-supplie
 certificates are not specified.
 """
 
-from datetime import datetime, timedelta, timezone
-from pathlib import Path
 import os
+from datetime import UTC, datetime, timedelta
+from pathlib import Path
 
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
@@ -47,7 +47,7 @@ def generate_self_signed_cert(
         ]
     )
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     cert = (
         x509.CertificateBuilder()
         .subject_name(subject)
@@ -57,7 +57,9 @@ def generate_self_signed_cert(
         .not_valid_before(now)
         .not_valid_after(now + timedelta(days=days_valid))
         .add_extension(
-            x509.SubjectAlternativeName([x509.DNSName(hostname), x509.DNSName("127.0.0.1")]),
+            x509.SubjectAlternativeName(
+                [x509.DNSName(hostname), x509.DNSName("127.0.0.1")]
+            ),
             critical=False,
         )
         .sign(private_key, hashes.SHA256())

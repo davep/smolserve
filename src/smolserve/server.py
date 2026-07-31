@@ -3,7 +3,6 @@
 Manages the lifecycle of Gemini, Gopher, and Finger servers concurrently.
 """
 
-from pathlib import Path
 import asyncio
 import logging
 import signal
@@ -138,7 +137,9 @@ class SmolServe:
             loop = asyncio.get_running_loop()
 
             def _forward_signal(sig: int) -> None:
-                logger.info("Signal received, forwarding to child process (PID %d)...", proc.pid)
+                logger.info(
+                    "Signal received, forwarding to child process (PID %d)...", proc.pid
+                )
                 try:
                     proc.send_signal(sig)
                 except ProcessLookupError:

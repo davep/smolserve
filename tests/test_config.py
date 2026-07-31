@@ -1,11 +1,12 @@
 """Tests for smolserve configuration loading and CLI parsing."""
 
-from pathlib import Path
 import tempfile
+from pathlib import Path
+
 from smolserve.config import Config, parse_args
 
 
-def test_default_config():
+def test_default_config() -> None:
     config = Config()
     assert config.host == "127.0.0.1"
     assert config.gemini.enabled is True
@@ -16,12 +17,16 @@ def test_default_config():
     assert config.finger.port == 7979
 
 
-def test_cli_argument_overrides():
+def test_cli_argument_overrides() -> None:
     args = [
-        "--host", "0.0.0.0",
-        "--gemini-port", "1966",
-        "--gopher-port", "7071",
-        "--finger-port", "7980",
+        "--host",
+        "0.0.0.0",
+        "--gemini-port",
+        "1966",
+        "--gopher-port",
+        "7071",
+        "--finger-port",
+        "7980",
         "--no-finger",
     ]
     config = parse_args(args)
@@ -32,7 +37,7 @@ def test_cli_argument_overrides():
     assert config.finger.enabled is False
 
 
-def test_toml_config_loading():
+def test_toml_config_loading() -> None:
     toml_content = """
 [general]
 host = "192.168.1.50"
@@ -66,7 +71,7 @@ plan_file = "/tmp/my_plan.txt"
         tf_path.unlink()
 
 
-def test_exec_parsing():
+def test_exec_parsing() -> None:
     # Test 'exec -- command args'
     config1 = parse_args(["--gemini-port", "1966", "exec", "--", "echo", "hello"])
     assert config1.gemini.port == 1966
@@ -79,4 +84,3 @@ def test_exec_parsing():
     # Test '--exec command args'
     config3 = parse_args(["--exec", "ls", "-la"])
     assert config3.exec_command == ["ls", "-la"]
-
