@@ -38,30 +38,69 @@ If target directories or plan files do not exist, `smolserve` automatically crea
 
 ### Exec / Command Wrapper Mode
 
-You can run `smolserve exec -- <command>` to start `smolserve` in the background for the duration of a command (such as `mkdocs build` or `mkdocs serve`). `smolserve` starts the protocol servers, executes your command, handles signal forwarding (`Ctrl+C`), and automatically shuts down all servers when the command exits.
+`smolserve` includes a built-in process wrapper mode (`exec`), allowing you to temporarily run the Gemini, Gopher, and Finger servers for the lifespan of an arbitrary command (such as static documentation site generation, live dev servers, or automated test runs).
+
+#### How It Works
+
+1. **Server Initialization**: `smolserve` starts and binds all configured protocol servers.
+2. **Process Execution**: Once servers are running, `smolserve` launches the specified child command.
+3. **Signal Forwarding**: Signals such as `SIGINT` (`Ctrl+C`) and `SIGTERM` are trapped and forwarded directly to the child process.
+4. **Automatic Cleanup & Exit Propagation**: When the child process completes, `smolserve` gracefully stops all background servers and exits with the exact exit code returned by the child process (or exit code `130` on cancellation).
+
+#### Command Syntax
+
+You can specify the subcommand using `exec --`, `exec`, or `--exec`:
 
 ```bash
-# Build docs with smolserve running in background
-uv run smolserve exec -- mkdocs build
+# Recommended POSIX standard syntax (using '--' separator)
+uv run smolserve exec -- <command> [args...]
 
-# Serve docs with livereload
-uv run smolserve exec -- mkdocs serve --livereload
+# Direct syntax without '--'
+uv run smolserve exec <command> [args...]
 
-# Pass custom options to smolserve while using exec
+# Flag syntax
+uv run smolserve --exec <command> [args...]
+```
+
+#### Passing Server Options
+
+`smolserve` flags and configuration options should be placed **before** the `exec` subcommand:
+
+```bash
+# Custom configuration file with exec
 uv run smolserve -c smolserve.toml exec -- mkdocs build
+
+# Custom host and port flags with exec
+uv run smolserve --host 0.0.0.0 --gemini-port 1966 exec -- pytest
 ```
 
-Makefile example:
+#### Use Cases & Examples
 
-```makefile
-.PHONY: docs
-docs:
-	uv run smolserve exec -- $(mkdocs) build
+- **Build Pipelines**: Ensure background protocol servers are available while building documentation or static sites.
+  ```bash
+  uv run smolserve exec -- mkdocs build
+  ```
 
-.PHONY: rtfm
-rtfm:
-	uv run smolserve exec -- $(mkdocs) serve --livereload
-```
+- **Live Development Servers**: Run interactive documentation servers with live reload while `smolserve` serves required content.
+  ```bash
+  uv run smolserve exec -- mkdocs serve --livereload
+  ```
+
+- **Integration Testing**: Automatically spin up servers, run integration test suites or test clients, and shut down cleanly.
+  ```bash
+  uv run smolserve exec -- pytest tests/
+  ```
+
+- **Makefile Integration**:
+  ```makefile
+  .PHONY: docs
+  docs:
+  	uv run smolserve exec -- $(mkdocs) build
+
+  .PHONY: rtfm
+  rtfm:
+  	uv run smolserve exec -- $(mkdocs) serve --livereload
+  ```
 
 ---
 
