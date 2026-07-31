@@ -82,6 +82,7 @@ class SmolServe:
         """
         self.config = config
         self.servers: list[GeminiServer | GopherServer | FingerServer] = []
+        self.ready_event = asyncio.Event()
 
     async def start(self) -> int:
         """Start all enabled protocol servers and run until stopped or child process exits.
@@ -124,6 +125,8 @@ class SmolServe:
         # Start all servers
         for server in self.servers:
             await server.start()
+
+        self.ready_event.set()
 
         if self.config.exec_command:
             cmd_str = " ".join(self.config.exec_command)
@@ -200,4 +203,5 @@ class SmolServe:
             except Exception as exc:
                 logger.error("Error stopping server: %s", exc)
         self.servers.clear()
+        self.ready_event.clear()
         logger.info("All servers stopped.")

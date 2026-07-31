@@ -53,8 +53,8 @@ async def test_smolserve_lifecycle() -> None:
 
         # Start servers in background task
         task = asyncio.create_task(smol.start())
-        # Give servers a moment to bind
-        await asyncio.sleep(0.1)
+        # Wait for servers to be bound and ready
+        await asyncio.wait_for(smol.ready_event.wait(), timeout=5.0)
 
         assert len(smol.servers) == 3
         for s in smol.servers:
