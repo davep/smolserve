@@ -6,7 +6,7 @@ readme = "README.md"
 authors = [
     { name = "Dave Pearson", email = "davep@davep.org" }
 ]
-requires-python = ">=3.13"
+requires-python = ">=3.11"
 license = "GPL-3.0-or-later"
 keywords = [
     "gemini",
@@ -26,11 +26,21 @@ classifiers = [
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3 :: Only",
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
     "Programming Language :: Python :: 3.15",
     "Typing :: Typed",
 ]
+
+[project.urls]
+Homepage = "https://smolserve.davep.dev/"
+Repository = "https://github.com/davep/smolserve"
+Documentation = "https://smolserve.davep.dev/"
+Source = "https://github.com/davep/smolserve"
+Issues = "https://github.com/davep/smolserve/issues"
+Discussions = "https://github.com/davep/smolserve/discussions"
 
 [project.scripts]
 smolserve = "smolserve:main"
