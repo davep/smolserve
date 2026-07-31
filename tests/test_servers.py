@@ -98,6 +98,40 @@ async def test_gopher_server_security_path_traversal() -> None:
 
 
 @pytest.mark.asyncio
+async def test_gopher_server_gophermap_dot_termination() -> None:
+    with tempfile.TemporaryDirectory() as tmpdir:
+        root = Path(tmpdir)
+        gophermap_content = (
+            "Welcome to Gopher\n"
+            "0File 1\t/file1.txt\n"
+            ".\n"
+            "This line should be ignored\n"
+        )
+        (root / "gophermap").write_text(gophermap_content, encoding="utf-8")
+
+        server = GopherServer(host="127.0.0.1", port=0, root=root)
+        await server.start()
+        assert server.server is not None
+        actual_port = server.server.sockets[0].getsockname()[1]
+
+        try:
+            reader, writer = await asyncio.open_connection("127.0.0.1", actual_port)
+            writer.write(b"\r\n")
+            await writer.drain()
+            response = (await reader.read()).decode("utf-8")
+            writer.close()
+            await writer.wait_closed()
+
+            assert "iWelcome to Gopher" in response
+            assert "0File 1\t/file1.txt" in response
+            assert "i." not in response
+            assert "This line should be ignored" not in response
+            assert response.endswith(".\r\n")
+        finally:
+            await server.stop()
+
+
+@pytest.mark.asyncio
 async def test_gemini_server_gmi_and_not_found() -> None:
     with tempfile.TemporaryDirectory() as tmpdir:
         root = Path(tmpdir)
