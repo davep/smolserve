@@ -1,8 +1,8 @@
 # smolserve ChangeLog
 
-## Unreleased
+## v0.0.3
 
-**Released: WiP**
+**Released: 2026-08-04**
 
 - Fixed handling of a lone `.` in gopher map processing in the Gopher
   server. ([#5](https://github.com/davep/smolserve/pull/5))
