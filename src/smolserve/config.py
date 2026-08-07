@@ -41,6 +41,15 @@ class FingerConfig:
 
 
 @dataclass
+class SpartanConfig:
+    """Spartan server settings."""
+
+    enabled: bool = True
+    port: int = 3000
+    root: Path = field(default_factory=lambda: Path("./public_spartan"))
+
+
+@dataclass
 class Config:
     """Root configuration for smolserve."""
 
@@ -48,6 +57,7 @@ class Config:
     gemini: GeminiConfig = field(default_factory=GeminiConfig)
     gopher: GopherConfig = field(default_factory=GopherConfig)
     finger: FingerConfig = field(default_factory=FingerConfig)
+    spartan: SpartanConfig = field(default_factory=SpartanConfig)
     exec_command: list[str] | None = None
     verbose: bool = False
     quiet: bool = False
@@ -99,6 +109,13 @@ class Config:
             if "plan_file" in fing:
                 config.finger.plan_file = Path(fing["plan_file"])
 
+        if "spartan" in data:
+            spart = data["spartan"]
+            config.spartan.enabled = spart.get("enabled", config.spartan.enabled)
+            config.spartan.port = spart.get("port", config.spartan.port)
+            if "root" in spart:
+                config.spartan.root = Path(spart["root"])
+
         return config
 
 
@@ -123,6 +140,11 @@ root = "./public_gopher"
 enabled = true
 port = 7979
 plan_file = "./plan.txt"
+
+[spartan]
+enabled = true
+port = 3000
+root = "./public_spartan"
 """
 
 
@@ -162,7 +184,7 @@ def parse_args(args: list[str] | None = None) -> Config:
             server_args = server_args[:exec_idx]
 
     parser = argparse.ArgumentParser(
-        description="smolserve - A lightweight Gemini, Gopher, and Finger server."
+        description="smolserve - A lightweight Gemini, Gopher, Finger, and Spartan server."
     )
 
     exec_group = parser.add_argument_group("execution mode")
@@ -215,6 +237,13 @@ def parse_args(args: list[str] | None = None) -> Config:
         "--no-finger", action="store_true", help="Disable Finger server."
     )
 
+    # Spartan flags
+    parser.add_argument("--spartan-port", type=int, help="Spartan server port.")
+    parser.add_argument("--spartan-root", type=Path, help="Spartan root directory.")
+    parser.add_argument(
+        "--no-spartan", action="store_true", help="Disable Spartan server."
+    )
+
     parsed = parser.parse_args(server_args)
 
     if parsed.generate_config:
@@ -261,5 +290,13 @@ def parse_args(args: list[str] | None = None) -> Config:
         config.finger.port = parsed.finger_port
     if parsed.finger_plan is not None:
         config.finger.plan_file = parsed.finger_plan
+
+    # Spartan overrides
+    if parsed.no_spartan:
+        config.spartan.enabled = False
+    if parsed.spartan_port is not None:
+        config.spartan.port = parsed.spartan_port
+    if parsed.spartan_root is not None:
+        config.spartan.root = parsed.spartan_root
 
     return config

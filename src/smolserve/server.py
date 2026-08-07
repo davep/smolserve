@@ -11,6 +11,7 @@ from .config import Config
 from .finger import FingerServer
 from .gemini import GeminiServer
 from .gopher import GopherServer
+from .spartan import SpartanServer
 
 logger = logging.getLogger(__name__)
 
@@ -70,6 +71,23 @@ def create_sample_content(config: Config) -> None:
             )
             logger.info("Created sample Finger plan file at %s", plan_file)
 
+    # Spartan sample content
+    if config.spartan.enabled:
+        spartan_root = config.spartan.root.expanduser().resolve()
+        if not spartan_root.exists():
+            spartan_root.mkdir(parents=True, exist_ok=True)
+            sample_spartan = spartan_root / "index.gmi"
+            sample_spartan.write_text(
+                "# Welcome to smolserve Spartan Server!\n\n"
+                "This is a sample Gemtext document served over Spartan by smolserve.\n\n"
+                "## Features\n"
+                "* Spartan protocol support\n"
+                "* Automatic directory listings\n"
+                "* Local testing environment\n",
+                encoding="utf-8",
+            )
+            logger.info("Created sample Spartan root at %s", spartan_root)
+
 
 class SmolServe:
     """Orchestrator for multi-protocol servers."""
@@ -81,7 +99,9 @@ class SmolServe:
             config: Server configuration.
         """
         self.config = config
-        self.servers: list[GeminiServer | GopherServer | FingerServer] = []
+        self.servers: list[
+            GeminiServer | GopherServer | FingerServer | SpartanServer
+        ] = []
         self.ready_event = asyncio.Event()
 
     async def start(self) -> int:
@@ -117,6 +137,14 @@ class SmolServe:
                 plan_file=self.config.finger.plan_file,
             )
             self.servers.append(fing_server)
+
+        if self.config.spartan.enabled:
+            spart_server = SpartanServer(
+                host=self.config.host,
+                port=self.config.spartan.port,
+                root=self.config.spartan.root,
+            )
+            self.servers.append(spart_server)
 
         if not self.servers:
             logger.error("No protocol servers enabled! Exiting.")

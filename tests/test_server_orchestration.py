@@ -17,6 +17,7 @@ def test_create_sample_content() -> None:
         config.gemini.root = base / "gemini"
         config.gopher.root = base / "gopher"
         config.finger.plan_file = base / "finger" / "plan.txt"
+        config.spartan.root = base / "spartan"
 
         create_sample_content(config)
 
@@ -24,6 +25,7 @@ def test_create_sample_content() -> None:
         assert (base / "gopher" / "gophermap").is_file()
         assert (base / "gopher" / "about.txt").is_file()
         assert (base / "finger" / "plan.txt").is_file()
+        assert (base / "spartan" / "index.gmi").is_file()
 
 
 def test_generate_config_option(capsys: pytest.CaptureFixture[str]) -> None:
@@ -35,6 +37,7 @@ def test_generate_config_option(capsys: pytest.CaptureFixture[str]) -> None:
     assert "[gemini]" in captured.out
     assert "[gopher]" in captured.out
     assert "[finger]" in captured.out
+    assert "[spartan]" in captured.out
 
 
 @pytest.mark.asyncio
@@ -45,9 +48,11 @@ async def test_smolserve_lifecycle() -> None:
         config.gemini.port = 0
         config.gopher.port = 0
         config.finger.port = 0
+        config.spartan.port = 0
         config.gemini.root = base / "gemini"
         config.gopher.root = base / "gopher"
         config.finger.plan_file = base / "finger" / "plan.txt"
+        config.spartan.root = base / "spartan"
 
         smol = SmolServe(config)
 
@@ -56,7 +61,7 @@ async def test_smolserve_lifecycle() -> None:
         # Wait for servers to be bound and ready
         await asyncio.wait_for(smol.ready_event.wait(), timeout=5.0)
 
-        assert len(smol.servers) == 3
+        assert len(smol.servers) == 4
         for s in smol.servers:
             assert s.server is not None
             assert s.server.is_serving()
@@ -74,9 +79,11 @@ async def test_smolserve_exec_command() -> None:
         config.gemini.port = 0
         config.gopher.port = 0
         config.finger.port = 0
+        config.spartan.port = 0
         config.gemini.root = base / "gemini"
         config.gopher.root = base / "gopher"
         config.finger.plan_file = base / "finger" / "plan.txt"
+        config.spartan.root = base / "spartan"
         config.exec_command = ["python", "-c", "import sys; sys.exit(0)"]
 
         smol = SmolServe(config)

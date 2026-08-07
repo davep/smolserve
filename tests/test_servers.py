@@ -10,6 +10,7 @@ import pytest
 from smolserve.finger import FingerServer
 from smolserve.gemini import GeminiServer
 from smolserve.gopher import GopherServer
+from smolserve.spartan import SpartanServer
 
 
 @pytest.mark.asyncio
@@ -170,5 +171,131 @@ async def test_gemini_server_gmi_and_not_found() -> None:
             await writer.wait_closed()
 
             assert not_found_resp.startswith("51 ")
+        finally:
+            await server.stop()
+
+
+@pytest.mark.asyncio
+async def test_spartan_server_gmi_and_not_found() -> None:
+    with tempfile.TemporaryDirectory() as tmpdir:
+        root = Path(tmpdir)
+        (root / "index.gmi").write_text(
+            "# Spartan Title\n\nSpartan text", encoding="utf-8"
+        )
+
+        server = SpartanServer(host="127.0.0.1", port=0, root=root)
+        await server.start()
+        assert server.server is not None
+        actual_port = server.server.sockets[0].getsockname()[1]
+
+        try:
+            # Request index.gmi via root path
+            reader, writer = await asyncio.open_connection("127.0.0.1", actual_port)
+            writer.write(b"127.0.0.1 / 0\r\n")
+            await writer.drain()
+            response = (await reader.read()).decode("utf-8")
+            writer.close()
+            await writer.wait_closed()
+
+            assert response.startswith("2 text/gemini")
+            assert "# Spartan Title" in response
+
+            # Request non-existent file
+            reader, writer = await asyncio.open_connection("127.0.0.1", actual_port)
+            writer.write(b"127.0.0.1 /missing.gmi 0\r\n")
+            await writer.drain()
+            not_found_resp = (await reader.read()).decode("utf-8")
+            writer.close()
+            await writer.wait_closed()
+
+            assert not_found_resp.startswith("4 ")
+        finally:
+            await server.stop()
+
+
+@pytest.mark.asyncio
+async def test_spartan_server_directory_listing_and_upload() -> None:
+    with tempfile.TemporaryDirectory() as tmpdir:
+        root = Path(tmpdir)
+        subdir = root / "files"
+        subdir.mkdir()
+        (subdir / "hello.txt").write_text("Hello Spartan", encoding="utf-8")
+
+        server = SpartanServer(host="127.0.0.1", port=0, root=root)
+        await server.start()
+        assert server.server is not None
+        actual_port = server.server.sockets[0].getsockname()[1]
+
+        try:
+            # Request directory listing
+            reader, writer = await asyncio.open_connection("127.0.0.1", actual_port)
+            writer.write(b"127.0.0.1 /files 0\r\n")
+            await writer.drain()
+            dir_resp = (await reader.read()).decode("utf-8")
+            writer.close()
+            await writer.wait_closed()
+
+            assert dir_resp.startswith("2 text/gemini")
+            assert "hello.txt" in dir_resp
+
+            # Request file with upload payload
+            reader, writer = await asyncio.open_connection("127.0.0.1", actual_port)
+            writer.write(b"127.0.0.1 /files/hello.txt 12\r\nSample Data!")
+            await writer.drain()
+            file_resp = (await reader.read()).decode("utf-8")
+            writer.close()
+            await writer.wait_closed()
+
+            assert file_resp.startswith("2 text/plain")
+            assert "Hello Spartan" in file_resp
+        finally:
+            await server.stop()
+
+
+@pytest.mark.asyncio
+async def test_spartan_server_error_handling() -> None:
+    with tempfile.TemporaryDirectory() as tmpdir:
+        root = Path(tmpdir)
+        server = SpartanServer(host="127.0.0.1", port=0, root=root)
+        await server.start()
+        assert server.server is not None
+        actual_port = server.server.sockets[0].getsockname()[1]
+
+        try:
+            # Invalid request format (missing parts)
+            reader, writer = await asyncio.open_connection("127.0.0.1", actual_port)
+            writer.write(b"invalid request\r\n")
+            await writer.drain()
+            resp1 = (await reader.read()).decode("utf-8")
+            writer.close()
+            await writer.wait_closed()
+            assert resp1.startswith("4 ")
+
+            # Non-absolute path
+            reader, writer = await asyncio.open_connection("127.0.0.1", actual_port)
+            writer.write(b"127.0.0.1 relative/path 0\r\n")
+            await writer.drain()
+            resp2 = (await reader.read()).decode("utf-8")
+            writer.close()
+            await writer.wait_closed()
+            assert resp2.startswith("4 ")
+
+            # Invalid content-length
+            reader, writer = await asyncio.open_connection("127.0.0.1", actual_port)
+            writer.write(b"127.0.0.1 / invalid_len\r\n")
+            await writer.drain()
+            resp3 = (await reader.read()).decode("utf-8")
+            writer.close()
+            await writer.wait_closed()
+            assert resp3.startswith("4 ")
+
+            # Path traversal attempt
+            reader, writer = await asyncio.open_connection("127.0.0.1", actual_port)
+            writer.write(b"127.0.0.1 /../secret 0\r\n")
+            await writer.drain()
+            resp4 = (await reader.read()).decode("utf-8")
+            writer.close()
+            await writer.wait_closed()
+            assert resp4.startswith("4 ")
         finally:
             await server.stop()
