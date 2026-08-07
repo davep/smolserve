@@ -1,8 +1,8 @@
 # smolserve ChangeLog
 
-## Unreleased
+## v0.0.4
 
-**Released: WiP**
+**Released: 2026-08-07**
 
 - Added support for the Spartan protocol.
   ([#8](https://github.com/davep/smolserve/pull/8))
