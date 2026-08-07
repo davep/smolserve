@@ -1,6 +1,6 @@
 [project]
 name = "smolserve"
-version = "0.0.3"
+version = "0.0.4"
 description = "Lightweight local multi-protocol server for Gemini, Gopher, Finger, and Spartan protocols"
 readme = "README.md"
 authors = [
