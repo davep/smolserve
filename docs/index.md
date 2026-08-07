@@ -1,12 +1,13 @@
 # smolserve
 
-A lightweight, multi-protocol server serving **Gemini**, **Gopher**, and **Finger** protocols for local testing, development, and documentation.
+A lightweight, multi-protocol server serving **Gemini**, **Gopher**, **Finger**, and **Spartan** protocols for local testing, development, and documentation.
 
 ## Features
 
 - **Gemini Server**: Serves Gemtext documents (`.gmi`, `.gemini`) and static files over TLS. Auto-generates Gemtext directory listings when index files are absent and auto-generates self-signed TLS certificates for local development if none are provided.
 - **Gopher Server**: Serves `gophermap` menus, directory listings, text files (with dot-stuffing), and binary files.
 - **Finger Server**: Responds to Finger queries (RFC 1288) with the contents of a plan file.
+- **Spartan Server**: Serves Gemtext documents (`.gmi`, `.gemini`), static files, and directory listings over TCP. Supports file upload blocks.
 - **Exec Process Wrapper**: Run `smolserve` in the background for the duration of an arbitrary command (such as `mkdocs build`, `pytest`, or `mkdocs serve`).
 - **Flexible Configuration**: Fully configurable via command-line arguments or a TOML configuration file.
 - **AsyncIO Powered**: Lightweight, single-process asynchronous server implementation.
@@ -47,7 +48,7 @@ uv sync
 
 ## Quick Start
 
-Run `smolserve` with defaults (binds to `127.0.0.1`, Gemini on port `1965`, Gopher on port `7070`, Finger on port `7979`):
+Run `smolserve` with defaults (binds to `127.0.0.1`, Gemini on port `1965`, Gopher on port `7070`, Finger on port `7979`, Spartan on port `3000`):
 
 ```bash
 smolserve
@@ -59,13 +60,13 @@ or with `uv`:
 uv run smolserve
 ```
 
-If target directories or plan files do not exist, `smolserve` automatically creates sample content directories (`public_gemini/`, `public_gopher/`, `plan.txt`) and self-signed TLS development certificates.
+If target directories or plan files do not exist, `smolserve` automatically creates sample content directories (`public_gemini/`, `public_gopher/`, `public_spartan/`, `plan.txt`) and self-signed TLS development certificates.
 
 ---
 
 ## Exec / Command Wrapper Mode
 
-`smolserve` includes a built-in process wrapper mode (`exec`), allowing you to temporarily run the Gemini, Gopher, and Finger servers for the lifespan of an arbitrary command (such as static documentation site generation, live dev servers, or automated test runs).
+`smolserve` includes a built-in process wrapper mode (`exec`), allowing you to temporarily run the Gemini, Gopher, Finger, and Spartan servers for the lifespan of an arbitrary command (such as static documentation site generation, live dev servers, or automated test runs).
 
 ### How It Works
 
@@ -157,6 +158,9 @@ Available flags:
 - `--finger-port`: Finger server port.
 - `--finger-plan`: Path to Finger plan file.
 - `--no-finger`: Disable Finger server.
+- `--spartan-port`: Spartan server port.
+- `--spartan-root`: Directory containing Spartan content.
+- `--no-spartan`: Disable Spartan server.
 
 ---
 
@@ -184,6 +188,11 @@ root = "./public_gopher"
 enabled = true
 port = 7979
 plan_file = "./plan.txt"
+
+[spartan]
+enabled = true
+port = 3000
+root = "./public_spartan"
 ```
 
 To generate a sample configuration file:

@@ -15,6 +15,8 @@ def test_default_config() -> None:
     assert config.gopher.port == 7070
     assert config.finger.enabled is True
     assert config.finger.port == 7979
+    assert config.spartan.enabled is True
+    assert config.spartan.port == 3000
 
 
 def test_cli_argument_overrides() -> None:
@@ -28,6 +30,9 @@ def test_cli_argument_overrides() -> None:
         "--finger-port",
         "7980",
         "--no-finger",
+        "--spartan-port",
+        "3001",
+        "--no-spartan",
     ]
     config = parse_args(args)
     assert config.host == "0.0.0.0"
@@ -35,6 +40,8 @@ def test_cli_argument_overrides() -> None:
     assert config.gopher.port == 7071
     assert config.finger.port == 7980
     assert config.finger.enabled is False
+    assert config.spartan.port == 3001
+    assert config.spartan.enabled is False
 
 
 def test_toml_config_loading() -> None:
@@ -53,6 +60,10 @@ root = "/tmp/gopher"
 
 [finger]
 plan_file = "/tmp/my_plan.txt"
+
+[spartan]
+port = 3002
+root = "/tmp/spartan"
 """
     with tempfile.NamedTemporaryFile("w+", suffix=".toml", delete=False) as tf:
         tf.write(toml_content)
@@ -67,6 +78,8 @@ plan_file = "/tmp/my_plan.txt"
         assert config.gopher.port == 7000
         assert config.gopher.root == Path("/tmp/gopher")
         assert config.finger.plan_file == Path("/tmp/my_plan.txt")
+        assert config.spartan.port == 3002
+        assert config.spartan.root == Path("/tmp/spartan")
     finally:
         tf_path.unlink()
 
