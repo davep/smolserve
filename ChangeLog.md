@@ -1,5 +1,11 @@
 # smolserve ChangeLog
 
+## v1.0.0
+
+**Released: 2026-08-09**
+
+- Bump to stable.
+
 ## v0.0.4
 
 **Released: 2026-08-07**

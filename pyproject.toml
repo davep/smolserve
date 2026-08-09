@@ -1,6 +1,6 @@
 [project]
 name = "smolserve"
-version = "0.0.4"
+version = "1.0.0"
 description = "Lightweight local multi-protocol server for Gemini, Gopher, Finger, and Spartan protocols"
 readme = "README.md"
 authors = [
@@ -20,7 +20,7 @@ dependencies = [
     "cryptography>=49.0.0",
 ]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 5 - Production/Stable",
     "Environment :: Console",
     "Intended Audience :: Developers",
     "Natural Language :: English",
