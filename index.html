@@ -696,12 +696,13 @@
 
 
 <h1 id="smolserve">smolserve</h1>
-<p>A lightweight, multi-protocol server serving <strong>Gemini</strong>, <strong>Gopher</strong>, and <strong>Finger</strong> protocols for local testing, development, and documentation.</p>
+<p>A lightweight, multi-protocol server serving <strong>Gemini</strong>, <strong>Gopher</strong>, <strong>Finger</strong>, and <strong>Spartan</strong> protocols for local testing, development, and documentation.</p>
 <h2 id="features">Features</h2>
 <ul>
 <li><strong>Gemini Server</strong>: Serves Gemtext documents (<code>.gmi</code>, <code>.gemini</code>) and static files over TLS. Auto-generates Gemtext directory listings when index files are absent and auto-generates self-signed TLS certificates for local development if none are provided.</li>
 <li><strong>Gopher Server</strong>: Serves <code>gophermap</code> menus, directory listings, text files (with dot-stuffing), and binary files.</li>
 <li><strong>Finger Server</strong>: Responds to Finger queries (RFC 1288) with the contents of a plan file.</li>
+<li><strong>Spartan Server</strong>: Serves Gemtext documents (<code>.gmi</code>, <code>.gemini</code>), static files, and directory listings over TCP. Supports file upload blocks.</li>
 <li><strong>Exec Process Wrapper</strong>: Run <code>smolserve</code> in the background for the duration of an arbitrary command (such as <code>mkdocs build</code>, <code>pytest</code>, or <code>mkdocs serve</code>).</li>
 <li><strong>Flexible Configuration</strong>: Fully configurable via command-line arguments or a TOML configuration file.</li>
 <li><strong>AsyncIO Powered</strong>: Lightweight, single-process asynchronous server implementation.</li>
@@ -725,16 +726,16 @@ uv<span class="w"> </span>sync
 </code></pre></div>
 <hr />
 <h2 id="quick-start">Quick Start</h2>
-<p>Run <code>smolserve</code> with defaults (binds to <code>127.0.0.1</code>, Gemini on port <code>1965</code>, Gopher on port <code>7070</code>, Finger on port <code>7979</code>):</p>
+<p>Run <code>smolserve</code> with defaults (binds to <code>127.0.0.1</code>, Gemini on port <code>1965</code>, Gopher on port <code>7070</code>, Finger on port <code>7979</code>, Spartan on port <code>3000</code>):</p>
 <div class="highlight"><pre><span></span><code>smolserve
 </code></pre></div>
 <p>or with <code>uv</code>:</p>
 <div class="highlight"><pre><span></span><code>uv<span class="w"> </span>run<span class="w"> </span>smolserve
 </code></pre></div>
-<p>If target directories or plan files do not exist, <code>smolserve</code> automatically creates sample content directories (<code>public_gemini/</code>, <code>public_gopher/</code>, <code>plan.txt</code>) and self-signed TLS development certificates.</p>
+<p>If target directories or plan files do not exist, <code>smolserve</code> automatically creates sample content directories (<code>public_gemini/</code>, <code>public_gopher/</code>, <code>public_spartan/</code>, <code>plan.txt</code>) and self-signed TLS development certificates.</p>
 <hr />
 <h2 id="exec-command-wrapper-mode">Exec / Command Wrapper Mode</h2>
-<p><code>smolserve</code> includes a built-in process wrapper mode (<code>exec</code>), allowing you to temporarily run the Gemini, Gopher, and Finger servers for the lifespan of an arbitrary command (such as static documentation site generation, live dev servers, or automated test runs).</p>
+<p><code>smolserve</code> includes a built-in process wrapper mode (<code>exec</code>), allowing you to temporarily run the Gemini, Gopher, Finger, and Spartan servers for the lifespan of an arbitrary command (such as static documentation site generation, live dev servers, or automated test runs).</p>
 <h3 id="how-it-works">How It Works</h3>
 <ol>
 <li><strong>Server Initialization</strong>: <code>smolserve</code> starts and binds all configured protocol servers.</li>
@@ -813,6 +814,9 @@ smolserve<span class="w"> </span>--host<span class="w"> </span><span class="m">0
 <li><code>--finger-port</code>: Finger server port.</li>
 <li><code>--finger-plan</code>: Path to Finger plan file.</li>
 <li><code>--no-finger</code>: Disable Finger server.</li>
+<li><code>--spartan-port</code>: Spartan server port.</li>
+<li><code>--spartan-root</code>: Directory containing Spartan content.</li>
+<li><code>--no-spartan</code>: Disable Spartan server.</li>
 </ul>
 <hr />
 <h2 id="toml-configuration">TOML Configuration</h2>
@@ -836,6 +840,11 @@ smolserve<span class="w"> </span>--host<span class="w"> </span><span class="m">0
 <span class="n">enabled</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
 <span class="n">port</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">7979</span>
 <span class="n">plan_file</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;./plan.txt&quot;</span>
+
+<span class="k">[spartan]</span>
+<span class="n">enabled</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
+<span class="n">port</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">3000</span>
+<span class="n">root</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;./public_spartan&quot;</span>
 </code></pre></div>
 <p>To generate a sample configuration file:</p>
 <div class="highlight"><pre><span></span><code>smolserve<span class="w"> </span>--generate-config<span class="w"> </span>&gt;<span class="w"> </span>smolserve.toml
