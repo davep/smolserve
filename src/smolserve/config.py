@@ -50,6 +50,15 @@ class SpartanConfig:
 
 
 @dataclass
+class NexConfig:
+    """Nex server settings."""
+
+    enabled: bool = True
+    port: int = 1900
+    root: Path = field(default_factory=lambda: Path("./public_nex"))
+
+
+@dataclass
 class Config:
     """Root configuration for smolserve."""
 
@@ -58,6 +67,7 @@ class Config:
     gopher: GopherConfig = field(default_factory=GopherConfig)
     finger: FingerConfig = field(default_factory=FingerConfig)
     spartan: SpartanConfig = field(default_factory=SpartanConfig)
+    nex: NexConfig = field(default_factory=NexConfig)
     exec_command: list[str] | None = None
     verbose: bool = False
     quiet: bool = False
@@ -116,6 +126,13 @@ class Config:
             if "root" in spart:
                 config.spartan.root = Path(spart["root"])
 
+        if "nex" in data:
+            nx = data["nex"]
+            config.nex.enabled = nx.get("enabled", config.nex.enabled)
+            config.nex.port = nx.get("port", config.nex.port)
+            if "root" in nx:
+                config.nex.root = Path(nx["root"])
+
         return config
 
 
@@ -145,6 +162,11 @@ plan_file = "./plan.txt"
 enabled = true
 port = 3000
 root = "./public_spartan"
+
+[nex]
+enabled = true
+port = 1900
+root = "./public_nex"
 """
 
 
@@ -184,7 +206,7 @@ def parse_args(args: list[str] | None = None) -> Config:
             server_args = server_args[:exec_idx]
 
     parser = argparse.ArgumentParser(
-        description="smolserve - A lightweight Gemini, Gopher, Finger, and Spartan server."
+        description="smolserve - A lightweight Gemini, Gopher, Finger, Spartan, and Nex server."
     )
 
     exec_group = parser.add_argument_group("execution mode")
@@ -244,6 +266,11 @@ def parse_args(args: list[str] | None = None) -> Config:
         "--no-spartan", action="store_true", help="Disable Spartan server."
     )
 
+    # Nex flags
+    parser.add_argument("--nex-port", type=int, help="Nex server port.")
+    parser.add_argument("--nex-root", type=Path, help="Nex root directory.")
+    parser.add_argument("--no-nex", action="store_true", help="Disable Nex server.")
+
     parsed = parser.parse_args(server_args)
 
     if parsed.generate_config:
@@ -298,5 +325,13 @@ def parse_args(args: list[str] | None = None) -> Config:
         config.spartan.port = parsed.spartan_port
     if parsed.spartan_root is not None:
         config.spartan.root = parsed.spartan_root
+
+    # Nex overrides
+    if parsed.no_nex:
+        config.nex.enabled = False
+    if parsed.nex_port is not None:
+        config.nex.port = parsed.nex_port
+    if parsed.nex_root is not None:
+        config.nex.root = parsed.nex_root
 
     return config

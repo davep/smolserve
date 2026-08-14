@@ -10,6 +10,7 @@ import pytest
 from smolserve.finger import FingerServer
 from smolserve.gemini import GeminiServer
 from smolserve.gopher import GopherServer
+from smolserve.nex import NexServer
 from smolserve.spartan import SpartanServer
 
 
@@ -297,5 +298,162 @@ async def test_spartan_server_error_handling() -> None:
             writer.close()
             await writer.wait_closed()
             assert resp4.startswith("4 ")
+        finally:
+            await server.stop()
+
+
+@pytest.mark.asyncio
+async def test_nex_server_index_and_file() -> None:
+    with tempfile.TemporaryDirectory() as tmpdir:
+        root = Path(tmpdir)
+        (root / "index.txt").write_text(
+            "Hello Nex Index\n=> /about.txt About", encoding="utf-8"
+        )
+        (root / "hello.txt").write_text("Hello Nex World!", encoding="utf-8")
+
+        server = NexServer(host="127.0.0.1", port=0, root=root)
+        await server.start()
+        assert server.server is not None
+        actual_port = server.server.sockets[0].getsockname()[1]
+
+        try:
+            # Request root with empty string
+            reader, writer = await asyncio.open_connection("127.0.0.1", actual_port)
+            writer.write(b"\r\n")
+            await writer.drain()
+            resp_empty = (await reader.read()).decode("utf-8")
+            writer.close()
+            await writer.wait_closed()
+            assert "Hello Nex Index" in resp_empty
+            assert "=> /about.txt About" in resp_empty
+
+            # Request root with "/"
+            reader, writer = await asyncio.open_connection("127.0.0.1", actual_port)
+            writer.write(b"/\r\n")
+            await writer.drain()
+            resp_slash = (await reader.read()).decode("utf-8")
+            writer.close()
+            await writer.wait_closed()
+            assert "Hello Nex Index" in resp_slash
+
+            # Request root with "nex://127.0.0.1/"
+            reader, writer = await asyncio.open_connection("127.0.0.1", actual_port)
+            writer.write(f"nex://127.0.0.1:{actual_port}/\r\n".encode())
+            await writer.drain()
+            resp_url = (await reader.read()).decode("utf-8")
+            writer.close()
+            await writer.wait_closed()
+            assert "Hello Nex Index" in resp_url
+
+            # Request specific file hello.txt
+            reader, writer = await asyncio.open_connection("127.0.0.1", actual_port)
+            writer.write(b"hello.txt\r\n")
+            await writer.drain()
+            resp_file = (await reader.read()).decode("utf-8")
+            writer.close()
+            await writer.wait_closed()
+            assert resp_file == "Hello Nex World!"
+
+            # Request file with leading slash
+            reader, writer = await asyncio.open_connection("127.0.0.1", actual_port)
+            writer.write(b"/hello.txt\r\n")
+            await writer.drain()
+            resp_file2 = (await reader.read()).decode("utf-8")
+            writer.close()
+            await writer.wait_closed()
+            assert resp_file2 == "Hello Nex World!"
+        finally:
+            await server.stop()
+
+
+@pytest.mark.asyncio
+async def test_nex_server_directory_listing() -> None:
+    with tempfile.TemporaryDirectory() as tmpdir:
+        root = Path(tmpdir)
+        subdir = root / "docs"
+        subdir.mkdir()
+        (subdir / "guide.txt").write_text("Nex Guide", encoding="utf-8")
+        nested_dir = subdir / "nested"
+        nested_dir.mkdir()
+
+        server = NexServer(host="127.0.0.1", port=0, root=root)
+        await server.start()
+        assert server.server is not None
+        actual_port = server.server.sockets[0].getsockname()[1]
+
+        try:
+            # Request docs directory (without index file)
+            reader, writer = await asyncio.open_connection("127.0.0.1", actual_port)
+            writer.write(b"/docs\r\n")
+            await writer.drain()
+            dir_resp = (await reader.read()).decode("utf-8")
+            writer.close()
+            await writer.wait_closed()
+
+            assert "Directory listing for /docs" in dir_resp
+            assert "=> / .. (parent directory)" in dir_resp
+            assert "=> /docs/guide.txt guide.txt" in dir_resp
+            assert "=> /docs/nested/ nested/" in dir_resp
+        finally:
+            await server.stop()
+
+
+@pytest.mark.asyncio
+async def test_nex_server_binary_file() -> None:
+    with tempfile.TemporaryDirectory() as tmpdir:
+        root = Path(tmpdir)
+        binary_data = b"\x00\x01\x02\xfe\xff\xaa\x55"
+        (root / "sample.bin").write_bytes(binary_data)
+
+        server = NexServer(host="127.0.0.1", port=0, root=root)
+        await server.start()
+        assert server.server is not None
+        actual_port = server.server.sockets[0].getsockname()[1]
+
+        try:
+            reader, writer = await asyncio.open_connection("127.0.0.1", actual_port)
+            writer.write(b"/sample.bin\r\n")
+            await writer.drain()
+            resp = await reader.read()
+            writer.close()
+            await writer.wait_closed()
+
+            assert resp == binary_data
+        finally:
+            await server.stop()
+
+
+@pytest.mark.asyncio
+async def test_nex_server_security_and_errors() -> None:
+    with tempfile.TemporaryDirectory() as tmpdir:
+        root = Path(tmpdir)
+        server = NexServer(host="127.0.0.1", port=0, root=root)
+        await server.start()
+        assert server.server is not None
+        actual_port = server.server.sockets[0].getsockname()[1]
+
+        try:
+            # Request non-existent file
+            reader, writer = await asyncio.open_connection("127.0.0.1", actual_port)
+            writer.write(b"/missing.txt\r\n")
+            await writer.drain()
+            resp_missing = (await reader.read()).decode("utf-8")
+            writer.close()
+            await writer.wait_closed()
+            assert "File not found" in resp_missing
+
+            # Path traversal attempt
+            reader, writer = await asyncio.open_connection("127.0.0.1", actual_port)
+            writer.write(b"/../secret.txt\r\n")
+            await writer.drain()
+            resp_traversal = (await reader.read()).decode("utf-8")
+            writer.close()
+            await writer.wait_closed()
+            assert "Access denied" in resp_traversal
+
+            # Immediate disconnect / empty
+            reader, writer = await asyncio.open_connection("127.0.0.1", actual_port)
+            writer.close()
+            await writer.wait_closed()
         finally:
             await server.stop()

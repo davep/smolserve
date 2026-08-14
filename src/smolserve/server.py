@@ -11,6 +11,7 @@ from .config import Config
 from .finger import FingerServer
 from .gemini import GeminiServer
 from .gopher import GopherServer
+from .nex import NexServer
 from .spartan import SpartanServer
 
 logger = logging.getLogger(__name__)
@@ -55,7 +56,7 @@ def create_sample_content(config: Config) -> None:
             )
             about_file = gopher_root / "about.txt"
             about_file.write_text(
-                "smolserve is a lightweight server for Gemini, Gopher, and Finger protocols.\n",
+                "smolserve is a lightweight server for Gemini, Gopher, Finger, Spartan, and Nex protocols.\n",
                 encoding="utf-8",
             )
             logger.info("Created sample Gopher root at %s", gopher_root)
@@ -88,6 +89,29 @@ def create_sample_content(config: Config) -> None:
             )
             logger.info("Created sample Spartan root at %s", spartan_root)
 
+    # Nex sample content
+    if config.nex.enabled:
+        nex_root = config.nex.root.expanduser().resolve()
+        if not nex_root.exists():
+            nex_root.mkdir(parents=True, exist_ok=True)
+            sample_nex = nex_root / "index.txt"
+            sample_nex.write_text(
+                "# Welcome to smolserve Nex Server!\n\n"
+                "This is a sample document served over Nex by smolserve.\n\n"
+                "## Features\n"
+                "* Nex protocol support\n"
+                "* Automatic directory listings\n"
+                "* Local testing environment\n\n"
+                "=> /about.txt About smolserve\n",
+                encoding="utf-8",
+            )
+            about_file = nex_root / "about.txt"
+            about_file.write_text(
+                "smolserve is a lightweight server for Gemini, Gopher, Finger, Spartan, and Nex protocols.\n",
+                encoding="utf-8",
+            )
+            logger.info("Created sample Nex root at %s", nex_root)
+
 
 class SmolServe:
     """Orchestrator for multi-protocol servers."""
@@ -100,7 +124,7 @@ class SmolServe:
         """
         self.config = config
         self.servers: list[
-            GeminiServer | GopherServer | FingerServer | SpartanServer
+            GeminiServer | GopherServer | FingerServer | SpartanServer | NexServer
         ] = []
         self.ready_event = asyncio.Event()
 
@@ -145,6 +169,14 @@ class SmolServe:
                 root=self.config.spartan.root,
             )
             self.servers.append(spart_server)
+
+        if self.config.nex.enabled:
+            nex_server = NexServer(
+                host=self.config.host,
+                port=self.config.nex.port,
+                root=self.config.nex.root,
+            )
+            self.servers.append(nex_server)
 
         if not self.servers:
             logger.error("No protocol servers enabled! Exiting.")
