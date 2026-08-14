@@ -1,8 +1,8 @@
 # smolserve ChangeLog
 
-## Unreleased
+## v1.1.0
 
-**Released: WiP**
+**Released: 2026-08-14**
 
 - Added support for the Nex protocol.
   ([#13](https://github.com/davep/smolserve/pull/13))
