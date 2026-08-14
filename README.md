@@ -2,6 +2,10 @@
 
 A lightweight, multi-protocol server serving **Gemini**, **Gopher**, **Finger**, and **Spartan** protocols for local testing and documentation.
 
+> [!important]
+> Not to be confused with [SmolServ](https://git.nil.im/js/SmolServ)
+> (no`e`), which is a genuine Gemini and HTTP server for the smol web.
+
 ## Features
 
 - **Gemini Server**: Serves Gemtext documents (`.gmi`, `.gemini`) and static files over TLS. Auto-generates Gemtext directory listings when index files are absent. Auto-generates self-signed TLS certificates for development if none are provided.
