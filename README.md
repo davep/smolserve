@@ -1,6 +1,6 @@
 # smolserve
 
-A lightweight, multi-protocol server serving **Gemini**, **Gopher**, **Finger**, and **Spartan** protocols for local testing and documentation.
+A lightweight, multi-protocol server serving **Gemini**, **Gopher**, **Finger**, **Spartan**, and **Nex** protocols for local testing and documentation.
 
 > [!important]
 > Not to be confused with [SmolServ](https://git.nil.im/js/SmolServ)
@@ -12,6 +12,7 @@ A lightweight, multi-protocol server serving **Gemini**, **Gopher**, **Finger**,
 - **Gopher Server**: Serves `gophermap` menus, directory listings, text files (with dot-stuffing), and binary files.
 - **Finger Server**: Responds to Finger queries (RFC 1288) with contents of a plan file.
 - **Spartan Server**: Serves Gemtext documents (`.gmi`, `.gemini`), static files, and directory listings over TCP. Supports file upload blocks.
+- **Nex Server**: Serves documents, static files, and plain text directory listings with `=> ` links over TCP.
 - **Flexible Configuration**: Configurable via command-line arguments or a TOML configuration file.
 - **AsyncIO Powered**: Lightweight, single-process asynchronous server implementation.
 
@@ -31,19 +32,19 @@ uv sync
 
 ### Quick Start
 
-Run `smolserve` with defaults (binds to `127.0.0.1`, Gemini on port `1965`, Gopher on port `7070`, Finger on port `7979`, Spartan on port `3000`):
+Run `smolserve` with defaults (binds to `127.0.0.1`, Gemini on port `1965`, Gopher on port `7070`, Finger on port `7979`, Spartan on port `3000`, Nex on port `1900`):
 
 ```bash
 uv run smolserve
 ```
 
-If target directories or plan files do not exist, `smolserve` automatically creates sample content directories (`public_gemini/`, `public_gopher/`, `public_spartan/`, `plan.txt`) and self-signed TLS dev certificates.
+If target directories or plan files do not exist, `smolserve` automatically creates sample content directories (`public_gemini/`, `public_gopher/`, `public_spartan/`, `public_nex/`, `plan.txt`) and self-signed TLS dev certificates.
 
 ---
 
 ### Exec / Command Wrapper Mode
 
-`smolserve` includes a built-in process wrapper mode (`exec`), allowing you to temporarily run the Gemini, Gopher, Finger, and Spartan servers for the lifespan of an arbitrary command (such as static documentation site generation, live dev servers, or automated test runs).
+`smolserve` includes a built-in process wrapper mode (`exec`), allowing you to temporarily run the Gemini, Gopher, Finger, Spartan, and Nex servers for the lifespan of an arbitrary command (such as static documentation site generation, live dev servers, or automated test runs).
 
 #### How It Works
 
@@ -134,6 +135,9 @@ Available flags:
 - `--spartan-port`: Spartan server port.
 - `--spartan-root`: Directory containing Spartan content.
 - `--no-spartan`: Disable Spartan server.
+- `--nex-port`: Nex server port.
+- `--nex-root`: Directory containing Nex content.
+- `--no-nex`: Disable Nex server.
 
 ---
 
@@ -166,6 +170,11 @@ plan_file = "./plan.txt"
 enabled = true
 port = 3000
 root = "./public_spartan"
+
+[nex]
+enabled = true
+port = 1900
+root = "./public_nex"
 ```
 
 To generate a sample configuration file:

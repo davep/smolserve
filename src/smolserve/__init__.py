@@ -1,6 +1,6 @@
 """smolserve package.
 
-A lightweight multi-protocol server for Gemini, Gopher, Finger, and Spartan protocols.
+A lightweight multi-protocol server for Gemini, Gopher, Finger, Spartan, and Nex protocols.
 """
 
 from .cli import main

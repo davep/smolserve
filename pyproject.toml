@@ -1,7 +1,7 @@
 [project]
 name = "smolserve"
 version = "1.0.0"
-description = "Lightweight local multi-protocol server for Gemini, Gopher, Finger, and Spartan protocols"
+description = "Lightweight local multi-protocol server for Gemini, Gopher, Finger, Spartan, and Nex protocols"
 readme = "README.md"
 authors = [
     { name = "Dave Pearson", email = "davep@davep.org" }
@@ -13,6 +13,7 @@ keywords = [
     "gopher",
     "finger",
     "spartan",
+    "nex",
     "server",
     "testing",
 ]

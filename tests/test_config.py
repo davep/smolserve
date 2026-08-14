@@ -17,6 +17,8 @@ def test_default_config() -> None:
     assert config.finger.port == 7979
     assert config.spartan.enabled is True
     assert config.spartan.port == 3000
+    assert config.nex.enabled is True
+    assert config.nex.port == 1900
 
 
 def test_cli_argument_overrides() -> None:
@@ -33,6 +35,9 @@ def test_cli_argument_overrides() -> None:
         "--spartan-port",
         "3001",
         "--no-spartan",
+        "--nex-port",
+        "1901",
+        "--no-nex",
     ]
     config = parse_args(args)
     assert config.host == "0.0.0.0"
@@ -42,6 +47,8 @@ def test_cli_argument_overrides() -> None:
     assert config.finger.enabled is False
     assert config.spartan.port == 3001
     assert config.spartan.enabled is False
+    assert config.nex.port == 1901
+    assert config.nex.enabled is False
 
 
 def test_toml_config_loading() -> None:
@@ -64,6 +71,10 @@ plan_file = "/tmp/my_plan.txt"
 [spartan]
 port = 3002
 root = "/tmp/spartan"
+
+[nex]
+port = 1902
+root = "/tmp/nex"
 """
     with tempfile.NamedTemporaryFile("w+", suffix=".toml", delete=False) as tf:
         tf.write(toml_content)
@@ -80,6 +91,8 @@ root = "/tmp/spartan"
         assert config.finger.plan_file == Path("/tmp/my_plan.txt")
         assert config.spartan.port == 3002
         assert config.spartan.root == Path("/tmp/spartan")
+        assert config.nex.port == 1902
+        assert config.nex.root == Path("/tmp/nex")
     finally:
         tf_path.unlink()
 
